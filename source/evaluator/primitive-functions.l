@@ -341,6 +341,10 @@
       (debug-print "call-x86-64-machine-code got back the control from "fn)
       result)))
 
+(when-at-expand (defined? 'spawn-program *globals*)
+  (define-primitive-function (spawn-program ()) ((path <string>))
+    (spawn-program)))
+
 (when-at-expand feature/debug-output
   (define-primitive-function enable-debug-output	() (set *debug-output-enabled?* true))
   (define-primitive-function disable-debug-output	() (set *debug-output-enabled?* false)))

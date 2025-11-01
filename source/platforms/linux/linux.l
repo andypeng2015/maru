@@ -110,3 +110,11 @@
                    (+ (+ linux/PROT_READ linux/PROT_WRITE)
                       linux/PROT_EXEC))
     result))
+
+(define-function spawn-program ()
+  (let ((pid (linux-syscall linux/fork)))
+    (if (= 0 pid)
+        (let ()
+          (platform/diag-print "hello from the forked child\n")
+          (linux-syscall linux/exit 0))
+      (platform/diag-print "child spawned\n"))))
