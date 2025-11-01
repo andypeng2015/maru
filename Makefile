@@ -144,6 +144,11 @@ else
 endif
 
 BACKDATE_FILE	= touch -t 200012312359
+# This should be something that prints the file size, but otherwise
+# fails gracefully when something is not available.
+define print_file_size
+  { echo -n "Generated file size: " && stat -c%s $(1) | numfmt --grouping && echo || true; }
+endef
 
 LLC		= llc$(LLVM_VERSION)
 CLANG		= clang$(LLVM_VERSION)
@@ -393,7 +398,7 @@ define compile-x86
 	source/bootstrapping/late.l						\
 	$(3)									\
 	source/emit-finish.l							\
-	>$(4) || { $(BACKDATE_FILE) $(4); exit 42; }
+	>$(4) && $(call print_file_size,$(4)) || { $(BACKDATE_FILE) $(4); exit 42; }
 endef
 #	>$(4) 2> >(tee $(4).build-log >&2) || { $(BACKDATE_FILE) $(4); exit 42; }
 
@@ -414,7 +419,7 @@ define compile-llvm
 	source/bootstrapping/late.l						\
 	$(3)									\
 	source/emit-finish.l							\
-	>$(4) || { $(BACKDATE_FILE) $(4); exit 42; }
+	>$(4) && $(call print_file_size,$(4)) || { $(BACKDATE_FILE) $(4); exit 42; }
 endef
 #	>$(4) 2> >(tee $(4).build-log >&2) || { $(BACKDATE_FILE) $(4); exit 42; }
 
