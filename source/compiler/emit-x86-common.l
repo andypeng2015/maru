@@ -41,6 +41,14 @@
            (putnext (digit-for (bitwise-and c 0xf))))))
       mangled)))
 
+(define-record <x86-compiler> <compiler>
+  (param-offset
+   arg-offset
+   arg-limit
+   asm-cell-type
+   fn-epilogue-label
+   ))
+
 ;;;
 ;;; OPERANDS
 ;;;
@@ -105,6 +113,12 @@
 ;; TODO rename to DEFINE? that would be less unique
 (define-instruction DEFLABEL	()
   ((LABEL)			(println $1":")))
+
+(define-instruction CELL	()
+  ((_)				(println "	"(<x86-compiler>-asm-cell-type -c-)"	"$1)))
+
+(define-instruction PTR		()
+  ((_)				(println "	"(<x86-compiler>-asm-cell-type -c-)"	"$1)))
 
 (define-instruction LEAVE	()
   ((long)			(println "	leave")
@@ -512,3 +526,5 @@
   (let ((temp (alloc-temp -c-)))
     (gen STORE temp)
     temp))
+
+(require "source/compiler/emit-x86-objects.l")
