@@ -30,13 +30,6 @@
 
 (require "source/compiler/emit-x86-common.l")
 
-(define-constant +call-frame-alignmet+
-  ;; TODO? on IA-32 this is simply (/ (target-value +word-size-in-bits+) 8)
-  16)
-
-(unless (= 64 (target-value +word-size-in-bits+))
-  (error "The x86 compiler backend doesn't support target word size "(target-value +word-size-in-bits+)))
-
 ;;;
 ;;; x86-64 -- INSTRUCTIONS
 ;;;

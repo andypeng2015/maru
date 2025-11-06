@@ -30,14 +30,6 @@
 
 (require "source/compiler/emit-x86-common.l")
 
-(define-constant +call-frame-alignmet+
-    (case (target-value +operating-system+)
-      (darwin	16)
-      (else	+word-size-in-bytes+)))
-
-(unless (= 32 (target-value +word-size-in-bits+))
-  (error "The x86 compiler backend doesn't support target word size "(target-value +word-size-in-bits+)))
-
 ;;;
 ;;; IA-32 -- INSTRUCTIONS
 ;;;

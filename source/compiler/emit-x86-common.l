@@ -5,6 +5,14 @@
 ;; TODO this is kludgey. why only this one, etc...
 (define-constant +word-size-in-bytes+ (target-value +word-size-in-bytes+))
 
+;; TODO introduce abstraction for ABIs...
+(define-constant +call-frame-alignmet+
+    (case (target-value +word-size-in-bits+)
+      (32 (case (target-value +operating-system+)
+            (darwin	16)
+            (else	+word-size-in-bytes+)))
+      (64 16)))
+
 (define-constant +external-label-prefix+
     (case (target-value +operating-system+)
       (darwin	"_")
