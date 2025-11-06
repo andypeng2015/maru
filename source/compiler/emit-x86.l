@@ -41,13 +41,8 @@
 				(unless (= 0 $1)
 				  (println "	sub	$"$1", %esp"))))
 
-;; TODO cannot merge 32 and 64 bit versions because of the LABEL
-(define-instruction LOAD	(false 0 true)
-  ((LI32)			(if (= 0 (<LITERAL>-value $1))
-				    (println "	xor	%eax, %eax")
-				  (println "	mov	"$1", %eax")))
-  ((LABEL)			(println "	mov	$"$1", %eax"))
-  ((_)				(println "	mov	"$1", %eax")))
+(define-instruction/emit-forms LOAD 0
+  ((LABEL)			(println "	mov	$"$1", %eax")))
 
 ;;;
 ;;; Compiler Infrastructure
@@ -263,66 +258,6 @@
 ;;; Special Forms
 ;;;
 
-(define-function compile/let-binding (binding comp)
-  ;; we unconditionally initialize empty bindings to () to avoid hidden bugs,
-  ;; at a small cost of initializing temp locations even when it wouldn't be necessary.
-  ;; TODO cleanup! expand now brings let bindings to a normal form (to ease encode's job). think this through...
-  (unless (pair? binding)
-    (set binding (list binding ())))
-  (unless (cdr binding)
-    (set binding (list (car binding) ())))
-  (let ((var (car binding))
-        (tmp (compile/prog-into-temp (cdr binding) comp)))
-    (assert (= (type-of var) <variable>) "compile/let-binding: encountered a non-variable: " var)
-    (set (<variable>-value var) tmp)))
-
-(define-function compile/let (expr -c-)
-  (let ((temps (map-with compile/let-binding (caddr expr) -c-)))
-    (list-do stmt (cdddr expr)
-      (comp stmt))
-    (free-temps temps)))
-
-(define-function compile/and (expr -c-)
-  (let ((done (UNIQUE-LABEL)))
-    (set expr (cdr expr))
-    (while expr
-      (comp (car expr))
-      (when (set expr (cdr expr))
-        (gen BF done)))
-    (gen DEFLABEL done)))
-
-(define-function compile/or (expr -c-)
-  (let ((done (UNIQUE-LABEL)))
-    (set expr (cdr expr))
-    (while expr
-      (comp (car expr))
-      (when (set expr (cdr expr))
-        (gen BT done)))
-    (gen DEFLABEL done)))
-
-(define-function compile/if (expr -c-)
-  (let ((l/false (UNIQUE-LABEL))
-        (l/end (UNIQUE-LABEL)))
-    (comp (second expr))
-    (gen BF l/false)
-    (comp (third expr))
-    (gen BR l/end)
-    (gen DEFLABEL l/false)
-    (list-do stmt (cdddr expr)
-      (comp stmt))
-    (gen DEFLABEL l/end)))
-
-(define-function compile/while (expr -c-)
-  (let ((l/body	(UNIQUE-LABEL))
-        (l/cond	(UNIQUE-LABEL)))
-    (gen BR l/cond)
-    (gen DEFLABEL l/body)
-    (list-do stmt (cddr expr)
-      (and stmt (comp stmt)))
-    (gen DEFLABEL l/cond)
-    (comp (second expr))
-    (gen BT l/body)))
-
 (define-function compile/set (expr -c-)
   (let* ((var	(second expr))
          (value	(<variable>-value var)))
@@ -341,12 +276,6 @@
   (let ((expr (eval form)))
     (gen LOAD (compile-expr expr () -c-))))
 
-(define-function compile/return (expr -c-)
-  (list-do stmt (cdr expr)
-    (comp stmt))
-  (gen BR (or (<x86-compiler>-fn-epilogue-label -c-)
-              (set (<x86-compiler>-fn-epilogue-label -c-) (UNIQUE-LABEL)))))
-
 (define-function compile/address-of (expr -c-)
   (let ((var (cadr expr)))
     (or (variable? var) (error "address-of: non-variable argument: "var))
@@ -358,13 +287,6 @@
          (gen ADDR val))
         (else
          (error "address-of: don't know how to compile for variable " var ", holding the value " val))))))
-
-(define-function compile/C-string (expr -c-)
-  ;; just an optimization to compile string literals into a C string
-  ;; when they would be immediately converted anyway.
-  (assert (= (list-length expr) 2))
-  (let ((label (emit-object/C-string (second expr) -c-)))
-    (gen LOAD label)))
 
 ;;;
 ;;; *special-forms*
